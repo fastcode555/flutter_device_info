@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   permission_handler_windows
-  platform_device_id_windows
   sim_card_info
 )
 

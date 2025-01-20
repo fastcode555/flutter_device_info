@@ -1,12 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-// import 'package:carrier_info/carrier_info.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:platform_device_id/platform_device_id.dart';
 import 'package:sim_card_info/sim_card_info.dart';
 
 import 'permission_manager.dart';
@@ -132,23 +129,20 @@ class DeviceInfoManager {
 
   // 获取设备标识符
   Future<Map<String, dynamic>> getDeviceIdentifiers() async {
-    String? deviceId = await PlatformDeviceId.getDeviceId;
 
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfo.androidInfo;
       return {
-        'deviceId': deviceId,
-        'androidId': androidInfo.id,
+        'deviceId': androidInfo.id,
         'fingerprint': androidInfo.fingerprint,
       };
     } else if (Platform.isIOS) {
       final iosInfo = await _deviceInfo.iosInfo;
       return {
-        'deviceId': deviceId,
-        'identifierForVendor': iosInfo.identifierForVendor,
+        'deviceId': iosInfo.identifierForVendor,
       };
     }
-    return {'deviceId': deviceId};
+    return {};
   }
 
   // 判断是否为真实设备

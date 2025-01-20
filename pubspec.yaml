@@ -34,7 +34,6 @@ dependencies:
   wifi_scan: ^0.4.1+1  # 用于扫描周边WiFi
   device_info_plus: ^11.2.1
   package_info_plus: ^8.1.3
-  platform_device_id: ^1.0.1  # 用于获取设备唯一标识符
   sim_card_info: ^1.0.2  # 用于获取SIM卡和手机号信息
 #  carrier_info: ^2.0.8   # 用于获取运营商信息
   permission_handler: ^11.3.1  # 用于权限管理
