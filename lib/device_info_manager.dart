@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:carrier_info/carrier_info.dart';
+// import 'package:carrier_info/carrier_info.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:platform_device_id/platform_device_id.dart';
 import 'package:sim_card_info/sim_card_info.dart';
 
+import 'permission_manager.dart';
 import 'wifi_info.dart';
 
 class DeviceInfoManager {
@@ -19,6 +21,7 @@ class DeviceInfoManager {
 
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
   final WifiInfoService _wifiInfo = WifiInfoService();
+  final PermissionManager _permissionManager = PermissionManager();
 
   // 获取硬件信息
   Future<Map<String, dynamic>> getHardwareInfo() async {
@@ -29,7 +32,7 @@ class DeviceInfoManager {
         'brand': androidInfo.brand,
         'manufacturer': androidInfo.manufacturer,
         'hardware': androidInfo.hardware,
-        'display': '${androidInfo.displayMetrics.widthPx}x${androidInfo.displayMetrics.heightPx}',
+        'display': androidInfo.display,
         'physicalDevice': androidInfo.isPhysicalDevice,
       };
     } else if (Platform.isIOS) {
@@ -62,10 +65,15 @@ class DeviceInfoManager {
   // 获取移动网络信息
   Future<Map<String, dynamic>> getMobileNetworkInfo() async {
     try {
+      // 检查权限
+      if (Platform.isAndroid && !await _permissionManager.checkPermission(Permission.phone)) {
+        return {};
+      }
+
       final simInfos = await SimCardInfo().getSimInfo();
       Map<dynamic, dynamic> carrierData = {};
 
-      if (Platform.isAndroid) {
+/*      if (Platform.isAndroid) {
         final androidInfo = await CarrierInfo.getAndroidInfo();
         debugPrint('$androidInfo');
         carrierData.addAll(androidInfo?.toMap() ?? {});
@@ -73,7 +81,7 @@ class DeviceInfoManager {
         final iosInfo = await CarrierInfo.getIosInfo();
         carrierData.addAll(iosInfo.toMap());
         debugPrint('$iosInfo');
-      }
+      }*/
       return {
         // 运营商信息
         ...carrierData,
@@ -93,25 +101,33 @@ class DeviceInfoManager {
   Future<Map<String, dynamic>> getNetworkInfo() async {
     final wifiInfo = await _wifiInfo.getCurrentWifiInfo();
     final mobileInfo = await getMobileNetworkInfo();
+    Map<String, dynamic> result = {};
+
+    // 只添加成功获取的信息
+    if (wifiInfo != null && !wifiInfo.containsKey('error')) {
+      result['currentWifi'] = wifiInfo;
+    }
+
+    if (mobileInfo != null && !mobileInfo.containsKey('error')) {
+      result['mobileNetwork'] = mobileInfo;
+    }
+
     List<dynamic> nearbyNetworks = [];
     try {
-      final networks = await _wifiInfo.scanWifiNetworks();
-      nearbyNetworks = networks
-          .map((network) => {
-                'ssid': network.ssid,
-                'bssid': network.bssid,
-                'level': network.level,
-              })
-          .toList();
+      if (await _permissionManager.checkPermission(Permission.location)) {
+        final networks = await _wifiInfo.scanWifiNetworks();
+        nearbyNetworks = networks.map((network) => {
+          'ssid': network.ssid,
+          'bssid': network.bssid,
+          'level': network.level,
+        }).toList();
+        result['nearbyNetworks'] = nearbyNetworks;
+      }
     } catch (e) {
       print('Failed to scan networks: $e');
     }
 
-    return {
-      'currentWifi': wifiInfo,
-      'mobileNetwork': mobileInfo,
-      'nearbyNetworks': nearbyNetworks,
-    };
+    return result;
   }
 
   // 获取设备标识符

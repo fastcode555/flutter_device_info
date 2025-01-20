@@ -1,4 +1,6 @@
 PODS:
+  - carrier_info (0.0.1):
+    - Flutter
   - device_info (0.0.1):
     - Flutter
   - device_info_plus (0.0.1):
@@ -8,21 +10,30 @@ PODS:
     - Flutter
   - package_info_plus (0.4.5):
     - Flutter
+  - permission_handler_apple (9.3.0):
+    - Flutter
   - platform_device_id (0.0.1):
+    - Flutter
+  - sim_card_info (0.0.1):
     - Flutter
   - wifi_scan (0.0.1):
     - Flutter
 
 DEPENDENCIES:
+  - carrier_info (from `.symlinks/plugins/carrier_info/ios`)
   - device_info (from `.symlinks/plugins/device_info/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
   - network_info_plus (from `.symlinks/plugins/network_info_plus/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - platform_device_id (from `.symlinks/plugins/platform_device_id/ios`)
+  - sim_card_info (from `.symlinks/plugins/sim_card_info/ios`)
   - wifi_scan (from `.symlinks/plugins/wifi_scan/ios`)
 
 EXTERNAL SOURCES:
+  carrier_info:
+    :path: ".symlinks/plugins/carrier_info/ios"
   device_info:
     :path: ".symlinks/plugins/device_info/ios"
   device_info_plus:
@@ -33,18 +44,25 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/network_info_plus/ios"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
   platform_device_id:
     :path: ".symlinks/plugins/platform_device_id/ios"
+  sim_card_info:
+    :path: ".symlinks/plugins/sim_card_info/ios"
   wifi_scan:
     :path: ".symlinks/plugins/wifi_scan/ios"
 
 SPEC CHECKSUMS:
+  carrier_info: 74da91657834617c4409e6afdb706ac4685efe66
   device_info: d7d233b645a32c40dfdc212de5cf646ca482f175
   device_info_plus: c6fb39579d0f423935b0c9ce7ee2f44b71b9fce6
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   network_info_plus: 6d0c3eb8367b8164fa3fb0c19875e3f59d49697f
   package_info_plus: 115f4ad11e0698c8c1c5d8a689390df880f47e85
+  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   platform_device_id: 81b3e2993881f87d0c82ef151dc274df4869aef5
+  sim_card_info: 4b5aa5d5f4633b5b439caf29d295e17f3aa9795d
   wifi_scan: 6d20b3b4f59bbad1ddcf3e241560f3acd62f6cbe
 
 PODFILE CHECKSUM: 819463e6a0290f5a72f145ba7cde16e8b6ef0796

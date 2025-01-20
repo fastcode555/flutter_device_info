@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'device_info_manager.dart';
+import 'permission_manager.dart';
 
 class DeviceInfoPage extends StatelessWidget {
   const DeviceInfoPage({super.key});
@@ -13,6 +15,46 @@ class DeviceInfoPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('设备信息'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.security),
+            tooltip: '权限设置',
+            onPressed: () async {
+              showDialog(
+                context: context,
+                builder: (context) => FutureBuilder<Map<Permission, PermissionStatus>>(
+                  future: PermissionManager().getPermissionStatus(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const AlertDialog(
+                        title: Text('加载中...'),
+                        content: CircularProgressIndicator(),
+                      );
+                    }
+                    
+                    return AlertDialog(
+                      title: const Text('权限状态'),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: snapshot.data!.entries.map((entry) {
+                            return ListTile(
+                              title: Text(_getPermissionName(entry.key)),
+                              subtitle: Text(_getStatusDescription(entry.value)),
+                              leading: Icon(
+                                entry.value.isGranted ? Icons.check_circle : Icons.error,
+                                color: entry.value.isGranted ? Colors.green : Colors.red,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.code),
             onPressed: () async {
@@ -56,10 +98,10 @@ class DeviceInfoPage extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 _buildDeviceTypeSection(data['deviceType']),
-                _buildSection('硬件信息', data['hardware']),
-                _buildSection('系统信息', data['system']),
-                _buildSection('网络信息', data['network']),
-                _buildSection('设备标识', data['identifiers']),
+                if (data['hardware'] != null) _buildSection('硬件信息', data['hardware']),
+                if (data['system'] != null) _buildSection('系统信息', data['system']),
+                if (data['network'] != null) _buildSection('网络信息', data['network']),
+                if (data['identifiers'] != null) _buildSection('设备标识', data['identifiers']),
               ],
             ),
           );
@@ -140,5 +182,37 @@ class DeviceInfoPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getPermissionName(Permission permission) {
+    switch (permission) {
+      case Permission.location:
+        return '位置信息';
+      case Permission.phone:
+        return '电话信息';
+      case Permission.nearbyWifiDevices:
+        return 'WiFi扫描';
+      case Permission.locationWhenInUse:
+        return '使用期间的位置信息';
+      default:
+        return permission.toString();
+    }
+  }
+
+  String _getStatusDescription(PermissionStatus status) {
+    switch (status) {
+      case PermissionStatus.granted:
+        return '已授权';
+      case PermissionStatus.denied:
+        return '已拒绝';
+      case PermissionStatus.permanentlyDenied:
+        return '永久拒绝';
+      case PermissionStatus.restricted:
+        return '受限制';
+      case PermissionStatus.limited:
+        return '部分授权';
+      default:
+        return '未知状态';
+    }
   }
 }
