@@ -66,23 +66,8 @@ class DeviceInfoManager {
       if (Platform.isAndroid && !await _permissionManager.checkPermission(Permission.phone)) {
         return {};
       }
-
       final simInfos = await SimCardInfo().getSimInfo();
-      Map<dynamic, dynamic> carrierData = {};
-
-/*      if (Platform.isAndroid) {
-        final androidInfo = await CarrierInfo.getAndroidInfo();
-        debugPrint('$androidInfo');
-        carrierData.addAll(androidInfo?.toMap() ?? {});
-      } else if (Platform.isIOS) {
-        final iosInfo = await CarrierInfo.getIosInfo();
-        carrierData.addAll(iosInfo.toMap());
-        debugPrint('$iosInfo');
-      }*/
       return {
-        // 运营商信息
-        ...carrierData,
-
         'sim_info': simInfos?.map((v) => v.toJson()).toList(),
       };
     } catch (e) {
@@ -101,11 +86,11 @@ class DeviceInfoManager {
     Map<String, dynamic> result = {};
 
     // 只添加成功获取的信息
-    if (wifiInfo != null && !wifiInfo.containsKey('error')) {
+    if (!wifiInfo.containsKey('error')) {
       result['currentWifi'] = wifiInfo;
     }
 
-    if (mobileInfo != null && !mobileInfo.containsKey('error')) {
+    if (!mobileInfo.containsKey('error')) {
       result['mobileNetwork'] = mobileInfo;
     }
 
@@ -113,11 +98,13 @@ class DeviceInfoManager {
     try {
       if (await _permissionManager.checkPermission(Permission.location)) {
         final networks = await _wifiInfo.scanWifiNetworks();
-        nearbyNetworks = networks.map((network) => {
-          'ssid': network.ssid,
-          'bssid': network.bssid,
-          'level': network.level,
-        }).toList();
+        nearbyNetworks = networks
+            .map((network) => {
+                  'ssid': network.ssid,
+                  'bssid': network.bssid,
+                  'level': network.level,
+                })
+            .toList();
         result['nearbyNetworks'] = nearbyNetworks;
       }
     } catch (e) {
@@ -129,7 +116,6 @@ class DeviceInfoManager {
 
   // 获取设备标识符
   Future<Map<String, dynamic>> getDeviceIdentifiers() async {
-
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfo.androidInfo;
       return {

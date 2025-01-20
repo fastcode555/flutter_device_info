@@ -9,6 +9,12 @@ import 'permission_manager.dart';
 class DeviceInfoPage extends StatelessWidget {
   const DeviceInfoPage({super.key});
 
+  // 申请权限并返回新的状态
+  Future<PermissionStatus> _requestPermission(Permission permission) async {
+    final status = await PermissionManager().requestPermission(permission);
+    return status;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,36 +27,62 @@ class DeviceInfoPage extends StatelessWidget {
             onPressed: () async {
               showDialog(
                 context: context,
-                builder: (context) => FutureBuilder<Map<Permission, PermissionStatus>>(
-                  future: PermissionManager().getPermissionStatus(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const AlertDialog(
-                        title: Text('加载中...'),
-                        content: CircularProgressIndicator(),
-                      );
-                    }
-                    
-                    return AlertDialog(
-                      title: const Text('权限状态'),
-                      content: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: snapshot.data!.entries.map((entry) {
-                            return ListTile(
-                              title: Text(_getPermissionName(entry.key)),
-                              subtitle: Text(_getStatusDescription(entry.value)),
-                              leading: Icon(
-                                entry.value.isGranted ? Icons.check_circle : Icons.error,
-                                color: entry.value.isGranted ? Colors.green : Colors.red,
-                              ),
-                            );
-                          }).toList(),
+                builder: (context) => StatefulBuilder(
+                  builder: (context, setState) => FutureBuilder<Map<Permission, PermissionStatus>>(
+                    future: PermissionManager().getPermissionStatus(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const AlertDialog(
+                          title: Text('加载中...'),
+                          content: CircularProgressIndicator(),
+                        );
+                      }
+                      
+                      return AlertDialog(
+                        title: const Text('权限状态'),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: snapshot.data!.entries.map((entry) {
+                              return ListTile(
+                                title: Text(_getPermissionName(entry.key)),
+                                subtitle: Text(_getStatusDescription(entry.value)),
+                                leading: Icon(
+                                  entry.value.isGranted ? Icons.check_circle : Icons.error,
+                                  color: entry.value.isGranted ? Colors.green : Colors.red,
+                                ),
+                                trailing: entry.value.isGranted
+                                    ? null
+                                    : TextButton(
+                                        onPressed: () async {
+                                          if (entry.value.isPermanentlyDenied) {
+                                            await PermissionManager().openAppSettings();
+                                          } else {
+                                            final newStatus = await _requestPermission(entry.key);
+                                            setState(() {
+                                              snapshot.data![entry.key] = newStatus;
+                                            });
+                                          }
+                                        },
+                                        child: Text(
+                                          entry.value.isPermanentlyDenied ? '去设置' : '授权',
+                                          style: const TextStyle(color: Colors.blue),
+                                        ),
+                                      ),
+                              );
+                            }).toList(),
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('关闭'),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               );
             },
