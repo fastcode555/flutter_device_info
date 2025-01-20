@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'device_info_page.dart';
+import 'package:flutter_device_info/src/device_info_page.dart';
 
 void main() {
   runApp(const MyApp());
