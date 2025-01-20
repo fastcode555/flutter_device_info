@@ -1,13 +1,20 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:carrier_info/carrier_info.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:platform_device_id/platform_device_id.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:platform_device_id/platform_device_id.dart';
+import 'package:sim_card_info/sim_card_info.dart';
+
 import 'wifi_info.dart';
 
 class DeviceInfoManager {
   static final DeviceInfoManager _instance = DeviceInfoManager._internal();
+
   factory DeviceInfoManager() => _instance;
+
   DeviceInfoManager._internal();
 
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
@@ -52,23 +59,57 @@ class DeviceInfoManager {
     };
   }
 
+  // 获取移动网络信息
+  Future<Map<String, dynamic>> getMobileNetworkInfo() async {
+    try {
+      final simInfos = await SimCardInfo().getSimInfo();
+      Map<dynamic, dynamic> carrierData = {};
+
+      if (Platform.isAndroid) {
+        final androidInfo = await CarrierInfo.getAndroidInfo();
+        debugPrint('$androidInfo');
+        carrierData.addAll(androidInfo?.toMap() ?? {});
+      } else if (Platform.isIOS) {
+        final iosInfo = await CarrierInfo.getIosInfo();
+        carrierData.addAll(iosInfo.toMap());
+        debugPrint('$iosInfo');
+      }
+      return {
+        // 运营商信息
+        ...carrierData,
+
+        'sim_info': simInfos?.map((v) => v.toJson()).toList(),
+      };
+    } catch (e) {
+      print('Failed to get mobile network info: $e');
+      return {
+        'error': 'Failed to get mobile network info',
+        'errorDetails': e.toString(),
+      };
+    }
+  }
+
   // 获取网络信息
   Future<Map<String, dynamic>> getNetworkInfo() async {
     final wifiInfo = await _wifiInfo.getCurrentWifiInfo();
+    final mobileInfo = await getMobileNetworkInfo();
     List<dynamic> nearbyNetworks = [];
     try {
       final networks = await _wifiInfo.scanWifiNetworks();
-      nearbyNetworks = networks.map((network) => {
-        'ssid': network.ssid,
-        'bssid': network.bssid,
-        'level': network.level,
-      }).toList();
+      nearbyNetworks = networks
+          .map((network) => {
+                'ssid': network.ssid,
+                'bssid': network.bssid,
+                'level': network.level,
+              })
+          .toList();
     } catch (e) {
       print('Failed to scan networks: $e');
     }
-    
+
     return {
       'currentWifi': wifiInfo,
+      'mobileNetwork': mobileInfo,
       'nearbyNetworks': nearbyNetworks,
     };
   }
@@ -76,7 +117,7 @@ class DeviceInfoManager {
   // 获取设备标识符
   Future<Map<String, dynamic>> getDeviceIdentifiers() async {
     String? deviceId = await PlatformDeviceId.getDeviceId;
-    
+
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfo.androidInfo;
       return {
@@ -144,4 +185,4 @@ class DeviceInfoManager {
     final deviceInfo = await generateFullDeviceInfo();
     return jsonEncode(deviceInfo);
   }
-} 
+}

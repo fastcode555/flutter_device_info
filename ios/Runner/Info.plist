@@ -49,5 +49,7 @@
 	<string>需要位置权限以获取WiFi信息</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>需要位置权限以获取WiFi信息</string>
+	<key>NSPhoneUsageDescription</key>
+	<string>需要访问电话信息以获取设备识别信息</string>
 </dict>
 </plist>

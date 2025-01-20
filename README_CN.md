@@ -34,6 +34,23 @@
         "ip": "String - 设备 IP 地址",
         "gateway": "String - 网关地址"
       },
+      "mobileNetwork": {
+        "carrierName": "String - 运营商名称",
+        "mobileCountryCode": "String - 移动国家代码",
+        "mobileNetworkCode": "String - 移动网络代码",
+        "networkType": "String - 网络类型",
+        "isRoaming": "Boolean - 是否漫游（仅 Android）",
+        "displayName": "String - 运营商显示名称（仅 Android）",
+        "isoCountryCode": "String - ISO国家代码（仅 iOS）",
+        "allowsVOIP": "Boolean - 是否允许VoIP（仅 iOS）",
+        "simSerialNumber": "String - SIM卡序列号",
+        "simSubscriberId": "String - SIM卡订阅者ID",
+        "simOperator": "String - SIM卡运营商代码",
+        "simOperatorName": "String - SIM卡运营商名称",
+        "phoneNumber": "String - 手机号码",
+        "simCountryIso": "String - SIM卡国家代码（ISO格式）",
+        "simState": "String - SIM卡状态"
+      },
       "nearbyNetworks": [
         {
           "ssid": "String - 网络名称",
