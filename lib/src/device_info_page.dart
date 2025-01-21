@@ -192,6 +192,7 @@ class DeviceInfoPage extends StatelessWidget {
                     if (data['system'] != null) _buildSection('系统信息', data['system']),
                     if (data['network'] != null) _buildSection('网络信息', data['network']),
                     if (data['identifiers'] != null) _buildSection('设备标识', data['identifiers']),
+                    if (data['location'] != null) _buildLocationInfo(data['location']),
                   ],
                 ),
               );
@@ -306,5 +307,70 @@ class DeviceInfoPage extends StatelessWidget {
       default:
         return '未知状态';
     }
+  }
+
+  String _formatLocationValue(double? value) {
+    if (value == null) return 'N/A';
+    return value.toStringAsFixed(6);
+  }
+
+  Widget _buildLocationInfo(Map<String, dynamic> locationInfo) {
+    if (locationInfo.isEmpty) {
+      return const Card(
+        margin: EdgeInsets.only(bottom: 16),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '位置信息',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Divider(),
+              Text('未获取到位置信息', style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (locationInfo.containsKey('error')) {
+      return const Card(
+        margin: EdgeInsets.only(bottom: 16),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '位置信息',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Divider(),
+              Text('获取失败', style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Format location data to match other sections
+    final formattedData = {
+      '纬度': '${_formatLocationValue(locationInfo['latitude'])}',
+      '经度': '${_formatLocationValue(locationInfo['longitude'])}',
+      '海拔': '${_formatLocationValue(locationInfo['altitude'])} 米',
+      '精确度': '${_formatLocationValue(locationInfo['accuracy'])} 米',
+      if (locationInfo['speed'] != null) '速度': '${_formatLocationValue(locationInfo['speed'])} 米/秒',
+      '更新时间': locationInfo['timestamp'] ?? 'N/A',
+    };
+
+    return _buildSection('位置信息', formattedData);
   }
 }

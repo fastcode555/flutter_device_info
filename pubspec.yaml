@@ -16,7 +16,7 @@ publish_to: 'https://github.com/fastcode555/flutter_device_info' # Remove this l
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0
+version: 1.0.1
 
 environment:
   sdk: ^3.5.4
@@ -36,6 +36,7 @@ dependencies:
   package_info_plus: ^8.1.3
   sim_card_info: ^1.0.2  # 用于获取SIM卡和手机号信息
   permission_handler: ^11.3.1  # 用于权限管理
+  geolocator: ^13.0.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

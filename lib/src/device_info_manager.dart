@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sim_card_info/sim_card_info.dart';
@@ -103,15 +104,18 @@ class DeviceInfoManager {
     }
 
     List<dynamic> nearbyNetworks = [];
+    final status = await _permissionManager.requestPermission(Permission.location);
+
     try {
-      if (await _permissionManager.checkPermission(Permission.location)) {
+      if (status.isGranted) {
         final networks = await _wifiInfo.scanWifiNetworks();
         nearbyNetworks = networks
-            .map((network) => {
-                  'ssid': network.ssid,
-                  'bssid': network.bssid,
-                  'level': network.level,
-                })
+            .map((network) =>
+        {
+          'ssid': network.ssid,
+          'bssid': network.bssid,
+          'level': network.level,
+        })
             .toList();
         result['nearbyNetworks'] = nearbyNetworks;
       }
@@ -153,12 +157,12 @@ class DeviceInfoManager {
 
   // 获取所有信息
   Future<Map<String, dynamic>> getAllDeviceInfo() async {
-    final isReal = await isRealDevice();
     return {
       'hardware': await getHardwareInfo(),
       'system': await getSystemInfo(),
       'network': await getNetworkInfo(),
       'identifiers': await getDeviceIdentifiers(),
+      'location': await getLocationInfo(),
     };
   }
 
@@ -172,6 +176,7 @@ class DeviceInfoManager {
         "system": allInfo['system'],
         "network": allInfo['network'],
         "identifiers": allInfo['identifiers'],
+        'location': await getLocationInfo(),
         "timestamp": DateTime.now().toIso8601String(),
       }
     };
@@ -196,17 +201,15 @@ class DeviceInfoManager {
   // 获取所有需要的权限列表
   List<Permission> getRequiredPermissions() {
     List<Permission> permissions = [
-      Permission.location, // WiFi扫描需要
+      Permission.location,
     ];
 
     if (Platform.isAndroid) {
-      permissions.addAll([
-        Permission.phone, // 用于获取移动网络信息
-      ]);
+      permissions.add(Permission.phone);
     }
 
     if (Platform.isIOS) {
-      permissions.add(Permission.locationWhenInUse); // iOS定位权限
+      permissions.add(Permission.locationWhenInUse);
     }
 
     return permissions;
@@ -215,10 +218,39 @@ class DeviceInfoManager {
   // 获取权限描述
   Map<Permission, String> getPermissionDescriptions() {
     return {
-      Permission.location: '用于获取WiFi信息和扫描周边网络',
+      Permission.location: '用于获取WiFi信息和设备位置',
       Permission.phone: '用于获取移动网络和SIM卡信息',
       Permission.nearbyWifiDevices: '用于扫描周边WiFi网络（Android 13及以上需要）',
-      Permission.locationWhenInUse: '用于获取WiFi信息（iOS需要）',
+      Permission.locationWhenInUse: '用于获取WiFi信息和设备位置（iOS需要）',
     };
+  }
+
+  // Add new method to get location info
+  Future<Map<String, dynamic>> getLocationInfo() async {
+    final status = await _permissionManager.requestPermission(Permission.location);
+    try {
+      if (!status.isGranted) {
+        return {};
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      return {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+        'accuracy': position.accuracy,
+        'altitude': position.altitude,
+        'speed': position.speed,
+        'timestamp': position.timestamp.toIso8601String(),
+      };
+    } catch (e) {
+      print('Failed to get location info: $e');
+      return {
+        'error': 'Failed to get location info',
+        'errorDetails': e.toString(),
+      };
+    }
   }
 }
