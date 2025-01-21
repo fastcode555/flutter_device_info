@@ -15,6 +15,42 @@ class DeviceInfoPage extends StatelessWidget {
     return status;
   }
 
+  // 申请所有必需的权限
+  Future<void> _requestAllPermissions(BuildContext context) async {
+    final deviceManager = DeviceInfoManager();
+    final permissions = deviceManager.getRequiredPermissions();
+    final descriptions = deviceManager.getPermissionDescriptions();
+
+    for (var permission in permissions) {
+      final status = await permission.status;
+      if (!status.isGranted && !status.isPermanentlyDenied) {
+        // 显示权限说明对话框
+        final shouldRequest = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('权限请求'),
+            content: Text(descriptions[permission] ?? '需要此权限以提供完整功能'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('暂不授权'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('授权'),
+              ),
+            ],
+          ),
+        ) ?? false;
+
+        if (shouldRequest) {
+          await _requestPermission(permission);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,7 +65,14 @@ class DeviceInfoPage extends StatelessWidget {
                 context: context,
                 builder: (context) => StatefulBuilder(
                   builder: (context, setState) => FutureBuilder<Map<Permission, PermissionStatus>>(
-                    future: PermissionManager().getPermissionStatus(),
+                    future: DeviceInfoManager().getRequiredPermissions().fold<Future<Map<Permission, PermissionStatus>>>(
+                      Future.value({}),
+                      (previousValue, permission) async {
+                        final map = await previousValue;
+                        map[permission] = await permission.status;
+                        return map;
+                      },
+                    ),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return const AlertDialog(
@@ -38,6 +81,7 @@ class DeviceInfoPage extends StatelessWidget {
                         );
                       }
                       
+                      final descriptions = DeviceInfoManager().getPermissionDescriptions();
                       return AlertDialog(
                         title: const Text('权限状态'),
                         content: SingleChildScrollView(
@@ -47,7 +91,19 @@ class DeviceInfoPage extends StatelessWidget {
                             children: snapshot.data!.entries.map((entry) {
                               return ListTile(
                                 title: Text(_getPermissionName(entry.key)),
-                                subtitle: Text(_getStatusDescription(entry.value)),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(_getStatusDescription(entry.value)),
+                                    Text(
+                                      descriptions[entry.key] ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 leading: Icon(
                                   entry.value.isGranted ? Icons.check_circle : Icons.error,
                                   color: entry.value.isGranted ? Colors.green : Colors.red,
@@ -106,36 +162,40 @@ class DeviceInfoPage extends StatelessWidget {
           ),
         ],
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: DeviceInfoManager().getAllDeviceInfo(),
+      body: FutureBuilder<void>(
+        future: _requestAllPermissions(context),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          return FutureBuilder<Map<String, dynamic>>(
+            future: DeviceInfoManager().getAllDeviceInfo(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
 
-          if (!snapshot.hasData) {
-            return const Center(child: Text('No data available'));
-          }
+              if (!snapshot.hasData) {
+                return const Center(child: Text('No data available'));
+              }
 
-          final data = snapshot.data!;
-          return RefreshIndicator(
-            onRefresh: () async {
-              (context as Element).markNeedsBuild();
+              final data = snapshot.data!;
+              return RefreshIndicator(
+                onRefresh: () async {
+                  (context as Element).markNeedsBuild();
+                },
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (data['hardware'] != null) _buildSection('硬件信息', data['hardware']),
+                    if (data['system'] != null) _buildSection('系统信息', data['system']),
+                    if (data['network'] != null) _buildSection('网络信息', data['network']),
+                    if (data['identifiers'] != null) _buildSection('设备标识', data['identifiers']),
+                  ],
+                ),
+              );
             },
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildDeviceTypeSection(data['deviceType']),
-                if (data['hardware'] != null) _buildSection('硬件信息', data['hardware']),
-                if (data['system'] != null) _buildSection('系统信息', data['system']),
-                if (data['network'] != null) _buildSection('网络信息', data['network']),
-                if (data['identifiers'] != null) _buildSection('设备标识', data['identifiers']),
-              ],
-            ),
           );
         },
       ),

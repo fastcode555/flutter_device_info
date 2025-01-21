@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sim_card_info/sim_card_info.dart';
@@ -10,11 +11,18 @@ import 'permission_manager.dart';
 import 'wifi_info.dart';
 
 class DeviceInfoManager {
-  static final DeviceInfoManager _instance = DeviceInfoManager._internal();
+  static DeviceInfoManager? _instance;
 
-  factory DeviceInfoManager() => _instance;
+  factory DeviceInfoManager() => _getInstance();
+
+  static DeviceInfoManager get instance => _getInstance();
 
   DeviceInfoManager._internal();
+
+  static DeviceInfoManager _getInstance() {
+    _instance ??= DeviceInfoManager._internal();
+    return _instance!;
+  }
 
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
   final WifiInfoService _wifiInfo = WifiInfoService();
@@ -54,7 +62,7 @@ class DeviceInfoManager {
       'locale': Platform.localeName,
       'appName': packageInfo.appName,
       'packageName': packageInfo.packageName,
-      'version': packageInfo.version,
+      'package_version': packageInfo.version,
       'buildNumber': packageInfo.buildNumber,
     };
   }
@@ -147,10 +155,6 @@ class DeviceInfoManager {
   Future<Map<String, dynamic>> getAllDeviceInfo() async {
     final isReal = await isRealDevice();
     return {
-      'deviceType': {
-        'isRealDevice': isReal,
-        'deviceTypeDesc': isReal ? 'RealDevice' : 'Emulator',
-      },
       'hardware': await getHardwareInfo(),
       'system': await getSystemInfo(),
       'network': await getNetworkInfo(),
@@ -161,17 +165,14 @@ class DeviceInfoManager {
   // 生成完整的JSON数据
   Future<Map<String, dynamic>> generateFullDeviceInfo() async {
     final Map<String, dynamic> allInfo = await getAllDeviceInfo();
-    final isReal = allInfo['deviceType']['isRealDevice'];
 
     return {
       "deviceInfo": {
-        "deviceType": isReal ? "RealDevice" : "Emulator",
         "hardware": allInfo['hardware'],
         "system": allInfo['system'],
         "network": allInfo['network'],
         "identifiers": allInfo['identifiers'],
         "timestamp": DateTime.now().toIso8601String(),
-        "isEmulator": !isReal,
       }
     };
   }
@@ -180,5 +181,44 @@ class DeviceInfoManager {
   Future<String> getDeviceInfoAsJson() async {
     final deviceInfo = await generateFullDeviceInfo();
     return jsonEncode(deviceInfo);
+  }
+
+  void requestPermissions() async {
+    final permissions = getRequiredPermissions();
+    for (final permission in permissions) {
+      final status = await PermissionManager().requestPermission(permission);
+      if (status.isGranted) {
+        debugPrint('request permission successd ${permission}');
+      }
+    }
+  }
+
+  // 获取所有需要的权限列表
+  List<Permission> getRequiredPermissions() {
+    List<Permission> permissions = [
+      Permission.location, // WiFi扫描需要
+    ];
+
+    if (Platform.isAndroid) {
+      permissions.addAll([
+        Permission.phone, // 用于获取移动网络信息
+      ]);
+    }
+
+    if (Platform.isIOS) {
+      permissions.add(Permission.locationWhenInUse); // iOS定位权限
+    }
+
+    return permissions;
+  }
+
+  // 获取权限描述
+  Map<Permission, String> getPermissionDescriptions() {
+    return {
+      Permission.location: '用于获取WiFi信息和扫描周边网络',
+      Permission.phone: '用于获取移动网络和SIM卡信息',
+      Permission.nearbyWifiDevices: '用于扫描周边WiFi网络（Android 13及以上需要）',
+      Permission.locationWhenInUse: '用于获取WiFi信息（iOS需要）',
+    };
   }
 }
